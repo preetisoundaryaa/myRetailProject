@@ -1,0 +1,62 @@
+trigger:
+  - main
+
+variables:
+  pythonVersion: '3.11'
+  imageRepository: 'retail-shelf-app'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+  azureContainerRegistry: 'yourregistry.azurecr.io'
+  azureWebAppName: 'retail-shelf-webapp'
+
+stages:
+  - stage: Test
+    displayName: Test stage
+    jobs:
+      - job: run_tests
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              pytest -q
+            displayName: Install deps and run tests
+
+  - stage: BuildAndPush
+    displayName: Build and push image
+    dependsOn: Test
+    jobs:
+      - job: docker_build
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: Build and push image
+            inputs:
+              command: buildAndPush
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: 'ACR-Service-Connection'
+              tags: |
+                $(tag)
+                latest
+
+  - stage: Deploy
+    displayName: Deploy stage
+    dependsOn: BuildAndPush
+    jobs:
+      - deployment: deploy_to_app_service
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  inputs:
+                    azureSubscription: 'Azure-Subscription-Service-Connection'
+                    appName: '$(azureWebAppName)'
+                    containers: '$(azureContainerRegistry)/$(imageRepository):$(tag)'
