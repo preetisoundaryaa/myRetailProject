@@ -31,3 +31,15 @@ def test_purchase_rejects_bad_qty_type():
     response = client.post('/api/purchase', json={"item_id": "A1", "qty": "abc"})
     assert response.status_code == 400
     assert response.get_json()['error'] == 'qty must be a positive integer'
+
+
+def test_metrics_endpoint_is_available():
+    app = build_app()
+    app.testing = True
+    client = app.test_client()
+
+    response = client.get('/metrics')
+
+    assert response.status_code == 200
+    assert 'text/plain' in response.content_type
+    assert b'retail_purchase_total' in response.data
