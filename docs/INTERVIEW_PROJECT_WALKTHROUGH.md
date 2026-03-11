@@ -188,3 +188,12 @@ For local container runs, the runtime is started by **`Dockerfile`** (`gunicorn`
 - Add integration test for end-to-end purchase flow.
 - Add pipeline gate for linting/security scan.
 
+** e-commerce application components:** 
+
+**Compute:** VMs for legacy services, App Services for web front-end, Azure Functions for event processing
+**Containers:** AKS clusters hosting microservices, Azure Container Instances for batch jobs
+**Data stores:** Azure SQL Database for transactions, Cosmos DB for product catalog, Redis Cache for sessions
+**Messaging:** Event Hubs for event streaming, Service Bus for reliable messaging, Event Grid for event routing
+**Storage:** Blob Storage for images and documents, Queue Storage for background tasks
+**Security:** Key Vault for secrets and certificates
+**Networking:** Application Gateway for load balancing, Front Door for global distribution
