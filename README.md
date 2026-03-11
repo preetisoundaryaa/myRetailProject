@@ -20,6 +20,7 @@ I built this as an interview project to show backend + frontend + Azure deployme
 - `POST /api/restock` add stock (no auth in demo)
 - `GET /health` basic health check
 - Basic app logging
+- Prometheus metrics endpoint (`GET /metrics`) for pod/app scraping
 
 ## Run locally
 
@@ -45,6 +46,43 @@ pytest -q
 ```
 
 The tests are intentionally basic; they focus on the inventory logic and a couple of endpoints I cared about first.
+
+
+## Observability (Prometheus + Grafana)
+
+### App metrics
+
+The app now exposes Prometheus metrics at `GET /metrics` in Prometheus exposition format.
+
+### Local monitoring stack with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Then open:
+- App: http://localhost:8000
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
+
+Grafana starts with plugin installation enabled via:
+- `grafana-piechart-panel`
+- `grafana-polystat-panel`
+
+### Kubernetes manifests
+
+Kubernetes manifests for a simple monitoring setup are in `monitoring/kubernetes/`:
+- `prometheus-configmap.yaml` (pod-based scraping for pods labeled `app=retail-shelf-app`)
+- `prometheus-deployment.yaml`
+- `grafana-deployment.yaml`
+
+Apply them with:
+
+```bash
+kubectl apply -f monitoring/kubernetes/prometheus-configmap.yaml
+kubectl apply -f monitoring/kubernetes/prometheus-deployment.yaml
+kubectl apply -f monitoring/kubernetes/grafana-deployment.yaml
+```
 
 ## Azure deployment
 
