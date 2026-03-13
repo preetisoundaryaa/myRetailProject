@@ -17,14 +17,23 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - task: AdvancedSecurity-Codeql-Init@1
+            displayName: Initialize CodeQL
+            inputs:
+              languages: 'python'
+
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '$(pythonVersion)'
+
           - script: |
               python -m pip install --upgrade pip
               pip install -r requirements.txt
               pytest -q
             displayName: Install deps and run tests
+
+          - task: AdvancedSecurity-Codeql-Analyze@1
+            displayName: Run CodeQL analysis
 
   - stage: BuildAndPush
     displayName: Build and push image
