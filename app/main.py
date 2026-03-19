@@ -1,4 +1,5 @@
 import logging
+import os
 from threading import Lock
 
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -55,7 +56,10 @@ def _prometheus_metrics_payload() -> str:
 
 
 def build_app() -> Flask:
-    app = Flask(__name__, static_folder="../static", static_url_path="")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    static_path = os.path.join(base_dir, "static")
+
+    app = Flask(__name__, static_folder=static_path, static_url_path="")
 
     logging.basicConfig(
         level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
@@ -145,4 +149,3 @@ app = build_app()
 if __name__ == "__main__":
     # this works for local dev, gunicorn runs it in prod container
     app.run(host="0.0.0.0", port=8000, debug=settings.DEBUG)
-
