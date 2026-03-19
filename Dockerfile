@@ -12,7 +12,8 @@ EXPOSE 8000
 ENV APP_ENV=prod
 ENV LOG_LEVEL=INFO
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app.main:app"]
+# Old CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app.main:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-80} app.main:app --workers 4 --threads 2"]
 
 # --- HEALTHCHECK using Python ---
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
