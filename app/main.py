@@ -145,3 +145,4 @@ app = build_app()
 if __name__ == "__main__":
     # this works for local dev, gunicorn runs it in prod container
     app.run(host="0.0.0.0", port=8000, debug=settings.DEBUG)
+
