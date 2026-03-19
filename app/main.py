@@ -69,10 +69,6 @@ def build_app() -> Flask:
 
 
     @app.route("/")
-    def home():
-        return "App is running!"
-
-    @app.get("/")
     def index():
         return send_from_directory(app.static_folder, "index.html")
 
