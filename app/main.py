@@ -12,6 +12,9 @@ _purchase_failed_total = 0
 _restock_success_total = 0
 _restock_failed_total = 0
 
+@app.route("/")
+def home():
+    return "App is running!"
 
 def _parse_positive_int(value):
     try:
