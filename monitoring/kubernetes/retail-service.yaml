@@ -2,14 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: retail-service
-  labels:
-    app: retail-shelf-app
 spec:
-  type: ClusterIP
   selector:
-    app: retail-shelf-app
+    app: retail-app   
   ports:
-    - name: http
-      protocol: TCP
-      port: 80
+    - protocol: TCP
+      port: 8000
       targetPort: 8000
+  type: ClusterIP

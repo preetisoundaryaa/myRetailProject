@@ -15,8 +15,8 @@ data:
           - targets:
               - localhost:9090
 
-      - job_name: retail-flask-app
-        metrics_path: /metrics
-        static_configs:
-          - targets:
-              - retail-service:80
+      - job_name: retail-app
+    static_configs:
+      - targets: retail-service:8000
+    metrics_path: /metrics
+
