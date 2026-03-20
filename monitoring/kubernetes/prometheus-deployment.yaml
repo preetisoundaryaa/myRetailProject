@@ -1,16 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: retail-prometheus
+  name: prometheus
+  labels:
+    app: prometheus
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: retail-prometheus
+      app: prometheus
   template:
     metadata:
       labels:
-        app: retail-prometheus
+        app: prometheus
     spec:
       containers:
         - name: prometheus
@@ -20,20 +22,9 @@ spec:
           ports:
             - containerPort: 9090
           volumeMounts:
-            - name: config
-              mountPath: /etc/prometheus
+            - name: prometheus-config
+              mountPath: /etc/prometheus/
       volumes:
-        - name: config
+        - name: prometheus-config
           configMap:
-            name: retail-prometheus-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: retail-prometheus
-spec:
-  selector:
-    app: retail-prometheus
-  ports:
-    - port: 9090
-      targetPort: 9090
+            name: prometheus-config
