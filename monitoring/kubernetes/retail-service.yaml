@@ -3,10 +3,11 @@ kind: Service
 metadata:
   name: retail-service
 spec:
+  type: NodePort
   selector:
-    app: retail-app   
+    app: retail-app
   ports:
     - protocol: TCP
-      port: 8000
+      port: 80
       targetPort: 8000
-  type: ClusterIP
+      nodePort: 30007
