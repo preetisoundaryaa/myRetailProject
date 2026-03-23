@@ -1,7 +1,7 @@
 import logging
 import os
 from threading import Lock
-
+from prometheus_flask_exporter import PrometheusMetrics
 from flask import Flask, Response, jsonify, request, send_from_directory
 
 from app.config import settings
@@ -67,6 +67,7 @@ def build_app() -> Flask:
     )
     logger = logging.getLogger("retail-app")
 
+    metrics = PrometheusMetrics(app)
 
     @app.route("/")
     def index():
@@ -132,9 +133,6 @@ def build_app() -> Flask:
     def health():
         return jsonify({"status": "ok", "env": settings.ENV})
 
-    @app.get("/metrics")
-    def metrics():
-        return Response(_prometheus_metrics_payload(), mimetype="text/plain; version=0.0.4")
 
     return app
 
