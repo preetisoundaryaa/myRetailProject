@@ -2,8 +2,8 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: retail-shelf-app
+  - job_name: retail-app
     metrics_path: /metrics
     static_configs:
       - targets:
-          - retail-shelf-app:8000
+          - retail-app:8000

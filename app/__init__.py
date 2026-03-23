@@ -1,1 +1,1 @@
-"""Application package for the retail shelf app."""
+"""Application package for the retail app."""

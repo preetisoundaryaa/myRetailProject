@@ -1,0 +1,54 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+image:
+  repository: preetisoundaryaa/myretail-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  APP_ENV: prod
+  DEBUG: "false"
+  LOG_LEVEL: INFO
+
+prometheus:
+  enabled: true
+  image: prom/prometheus:v2.54.1
+  service:
+    type: ClusterIP
+    port: 9090
+  scrapeInterval: 15s
+  scrapeTimeout: 10s
+  evaluationInterval: 1m
+
+  serviceAccount:
+    name: prometheus-sa
+  clusterRole:
+    name: prometheus-cr
+  clusterRoleBinding:
+    name: prometheus-crb
+
+grafana:
+  enabled: true
+  image: grafana/grafana:11.1.4
+  service:
+    type: ClusterIP
+    port: 3000
+  adminUser: admin
+  adminPassword: admin
+  plugins: grafana-piechart-panel,grafana-polystat-panel

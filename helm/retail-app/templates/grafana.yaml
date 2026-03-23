@@ -1,20 +1,4 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-datasources
-  labels:
-    app: grafana
-data:
-  datasource.yml: |
-    apiVersion: 1
-    datasources:
-      - name: Prometheus
-        type: prometheus
-        access: proxy
-        url: http://prometheus-service:9090
-        isDefault: true
-        editable: true
----
+{{- if .Values.grafana.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,16 +17,17 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:11.1.4
+          image: {{ .Values.grafana.image }}
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: admin
+              value: {{ .Values.grafana.adminUser | quote }}
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: admin
+              value: {{ .Values.grafana.adminPassword | quote }}
             - name: GF_INSTALL_PLUGINS
-              value: grafana-piechart-panel,grafana-polystat-panel
+              value: {{ .Values.grafana.plugins | quote }}
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
           volumeMounts:
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources
@@ -51,3 +36,20 @@ spec:
         - name: grafana-datasources
           configMap:
             name: grafana-datasources
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  labels:
+    app: grafana
+spec:
+  type: {{ .Values.grafana.service.type }}
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.grafana.service.port }}
+      targetPort: http
+{{- end }}
