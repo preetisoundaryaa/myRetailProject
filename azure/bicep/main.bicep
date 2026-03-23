@@ -43,7 +43,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOCKER|${acr.properties.loginServer}/retail-shelf-app:latest'
+      linuxFxVersion: 'DOCKER|${acr.properties.loginServer}/retail-app:latest'
       appSettings: [
         {
           name: 'WEBSITES_PORT'

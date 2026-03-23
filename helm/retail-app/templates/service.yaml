@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: retail-app
+  labels:
+    {{- include "retail-app.labels" . | nindent 4 }}
+    app: retail-app
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "retail-app.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}

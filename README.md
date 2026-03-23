@@ -1,28 +1,50 @@
-# Retail Shelf Manager
+# myRetailProject
 
-Small Flask app for shelf item management. It shows items, lets you buy one, and updates stock in memory.
+Production-ready retail inventory application with a DevOps-first setup:
+- Flask API + static frontend
+- Dockerized runtime
+- Kubernetes deployment via Helm
+- Prometheus + Grafana monitoring
+- Argo CD GitOps delivery
 
-I built this as an interview project to show backend + frontend + Azure deployment basics without adding extra moving parts.
+## Repository structure
 
-## Stack
+```text
+myRetailProject/
+├── app/                     # Flask app
+├── helm/
+│   └── retail-app/          # Helm chart for app + monitoring stack
+├── argocd/
+│   └── application.yaml     # Argo CD application manifest
+├── docs/
+│   └── architecture.md
+├── Dockerfile
+└── README.md
+```
 
-- Python 3.11
-- Flask backend
-- Vanilla JS frontend
-- Docker
-- Azure App Service + Azure Container Registry
-- Azure Pipelines + optional GitHub Actions CI
+## Architecture (text diagram)
 
-## Features
+```text
+User -> retail-app Service -> retail-app Pod(s)
+                               |\
+                               | \-> /health
+                               |
+                               \--> /metrics -> Prometheus -> Grafana dashboards
+```
 
-- `GET /api/items` list shelf items
-- `POST /api/purchase` buy item (`item_id`, `qty`, qty must be positive int)
-- `POST /api/restock` add stock (no auth in demo)
-- `GET /health` basic health check
-- Basic app logging
-- Prometheus metrics endpoint (`GET /metrics`) for pod/app scraping
+See `docs/architecture.md` for the full flow.
 
-## Run locally
+## Application endpoints
+
+- `GET /api/items`
+- `POST /api/purchase`
+- `POST /api/restock`
+- `GET /health`
+- `GET /metrics` (provided by Prometheus Flask exporter)
+
+## Local run
+
+### 1) Python
 
 ```bash
 python -m venv .venv
@@ -33,116 +55,69 @@ python -m app.main
 
 Open http://localhost:8000
 
-### With Docker Compose
+### 2) Docker build and run
 
 ```bash
-docker compose up --build
+docker build -t retail-app:local .
+docker run --rm -p 8000:8000 retail-app:local
 ```
 
-## Tests
+## Helm deployment
+
+Install into current Kubernetes context:
 
 ```bash
-pytest -q
+helm install retail-release ./helm/retail-app
 ```
 
-The tests are intentionally basic; they focus on the inventory logic and a couple of endpoints I cared about first.
-
-
-## Observability (Prometheus + Grafana)
-
-### App metrics
-
-The app now exposes Prometheus metrics at `GET /metrics` in Prometheus exposition format.
-
-### Local monitoring stack with Docker Compose
+Optional custom values:
 
 ```bash
-docker compose up --build
+helm install retail-release ./helm/retail-app \
+  --set image.repository=preetisoundaryaa/myretail-app \
+  --set image.tag=latest \
+  --set replicaCount=3 \
+  --set service.type=LoadBalancer
 ```
 
-Then open:
-- App: http://localhost:8000
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000 (admin/admin)
+## Argo CD GitOps deployment
 
-Grafana starts with plugin installation enabled via:
-- `grafana-piechart-panel`
-- `grafana-polystat-panel`
-
-### Kubernetes manifests
-
-Kubernetes manifests for a simple monitoring setup are in `monitoring/kubernetes/`:
-- `prometheus-configmap.yaml` (pod-based scraping for pods labeled `app=retail-shelf-app`)
-- `prometheus-deployment.yaml`
-- `grafana-deployment.yaml`
-
-Apply them with:
+1. Apply Argo CD application:
 
 ```bash
-kubectl apply -f monitoring/kubernetes/prometheus-configmap.yaml
-kubectl apply -f monitoring/kubernetes/prometheus-deployment.yaml
-kubectl apply -f monitoring/kubernetes/grafana-deployment.yaml
+kubectl apply -f argocd/application.yaml
 ```
 
-## Azure deployment
+2. Argo CD sync behavior:
+- Uses chart path: `helm/retail-app`
+- `automated` sync enabled
+- `prune: true`
+- `selfHeal: true`
 
-### 1) Provision infrastructure
+## Monitoring details
 
-```bash
-az group create --name rg-retail-shelf --location eastus
-az deployment group create \
-  --resource-group rg-retail-shelf \
-  --template-file azure/bicep/main.bicep \
-  --parameters appName=retail-shelf-webapp
-```
+### Prometheus
 
-This creates:
-- Linux App Service Plan
-- Web App for containers
-- Azure Container Registry
-- Storage account
+- Runs in-cluster from Helm chart.
+- Scrapes `retail-app` using Kubernetes endpoint discovery.
+- Uses `prometheus-sa` + `ClusterRole` + `ClusterRoleBinding` for pod/service discovery.
 
-### 2) Push image manually (one-time sanity check)
+### Grafana
 
-```bash
-az acr login --name <acrName>
-docker build -t <acrLoginServer>/retail-shelf-app:latest .
-docker push <acrLoginServer>/retail-shelf-app:latest
-```
+- Runs in-cluster from Helm chart.
+- Starts with Prometheus datasource provisioned.
+- Default credentials are configurable in Helm values.
 
-### 3) Wire up pipeline service connections
+## GitOps workflow summary
 
-In Azure DevOps project settings, create:
-- `ACR-Service-Connection`
-- `Azure-Subscription-Service-Connection`
-
-Then the `azure/azure-pipelines.yml` pipeline can build and deploy on `main` pushes.
-
-App Service settings can be applied from `azure/appsettings.json` if you want to script config updates.
-
-## Config
-
-Copy `.env.example` to `.env` for local overrides.
-
-Main values:
-- `APP_ENV=dev|prod`
-- `DEBUG=true|false`
-- `LOG_LEVEL=DEBUG|INFO|WARNING`
-
-## Suggested git history
-
-This is how I would have split commits while building it for real:
-
-1. `init flask app skeleton and health endpoint`
-2. `add in-memory shelf store and purchase flow`
-3. `hook up plain js frontend for item listing + buy action`
-4. `add tests for store math and api validation`
-5. `containerize app and add compose for local dev`
-6. `add azure bicep infra + devops pipeline`
-7. `add github actions ci and clean up readme`
+1. Edit app/chart in Git.
+2. Push changes and merge to `main`.
+3. Argo CD detects repository delta.
+4. Argo CD syncs cluster to desired state.
+5. Prometheus and Grafana validate service health/metrics.
 
 ## Notes
 
-- Inventory is in-memory so restarts reset stock.
-- TODO: move store to Cosmos DB or Postgres if this becomes a real shared app.
-- The restock route should require auth in any real environment.
+- Flask service binds to `0.0.0.0:8000`.
+- Production container uses gunicorn on port `8000`.
+- Inventory store is in-memory (stateless demo behavior).

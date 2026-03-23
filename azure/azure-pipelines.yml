@@ -3,7 +3,7 @@ trigger:
 
 variables:
   pythonVersion: '3.11'
-  imageRepository: 'retail-shelf-app'
+  imageRepository: 'retail-app'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
   azureContainerRegistry: 'yourregistry.azurecr.io'
