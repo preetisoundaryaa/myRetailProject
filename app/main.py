@@ -106,11 +106,11 @@ def build_app() -> Flask:
     def health():
         return jsonify({"status": "ok", "env": settings.ENV})
 
-    return app
-
     @app.route("/version")
     def version():
         return "Version 1 running"
+
+    return app
 
 app = build_app()
 
