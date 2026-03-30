@@ -25,7 +25,7 @@ steps:
   - name: Set up Python
     uses: actions/setup-python@v5
     with:
-      python-version: '3.11'
+      python-version: "3.11"
 
   - name: Install dependencies
     run: |
@@ -50,7 +50,7 @@ steps:
       fetch-depth: 0
 
   - name: Set image tag
-    run: echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+    run: echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
 
   - name: Set up Docker Buildx
     uses: docker/setup-buildx-action@v3
@@ -96,10 +96,6 @@ steps:
       fi
 
       git commit -m "chore(ci): update image tag to ${IMAGE_TAG}"
-
-      git pull --rebase
-      git push
-```
 
       git pull --rebase
       git push
