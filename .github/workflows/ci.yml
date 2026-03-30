@@ -1,31 +1,106 @@
-name: CI
+name: CI/CD
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+pull_request:
+branches:
+- main
+push:
+branches:
+- main
+paths-ignore:
+- 'helm/retail-app/values.yaml'
+
+permissions:
+contents: write
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+test:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+```
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
+  - name: Install dependencies
+    run: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+      pip install pytest
 
-      - name: Run tests
-        run: pytest -q
+  - name: Run tests
+    run: pytest -q
+```
+
+build-and-release:
+if: github.event_name == 'push'
+needs: test
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+
+  - name: Set image tag
+    run: echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+  - name: Set up Docker Buildx
+    uses: docker/setup-buildx-action@v3
+
+  - name: Log in to Docker Hub
+    uses: docker/login-action@v3
+    with:
+      username: ${{ secrets.DOCKER_USERNAME }}
+      password: ${{ secrets.DOCKER_PASSWORD }}
+
+  - name: Build Docker image
+    run: |
+      docker build \
+        --label "commit=${GITHUB_SHA}" \
+        -t preetisoundaryaa/myretail-app:${IMAGE_TAG} \
+        -t preetisoundaryaa/myretail-app:latest \
+        .
+
+  - name: Push Docker images
+    run: |
+      docker push preetisoundaryaa/myretail-app:${IMAGE_TAG}
+      docker push preetisoundaryaa/myretail-app:latest
+
+  - name: Install yq
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y yq
+
+  - name: Update Helm values image tag
+    run: |
+      yq e '.image.tag = strenv(IMAGE_TAG)' -i helm/retail-app/values.yaml
+
+  - name: Commit and push Helm tag update
+    run: |
+      git config user.name "github-actions"
+      git config user.email "actions@github.com"
+
+      git add helm/retail-app/values.yaml
+
+      if git diff --cached --quiet; then
+        echo "No image tag changes to commit"
+        exit 0
+      fi
+
+      git commit -m "chore(ci): update image tag to ${IMAGE_TAG}"
+
+      git pull --rebase
+      git push
+```
+
+      git pull --rebase
+      git push
+```
