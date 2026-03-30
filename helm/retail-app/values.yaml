@@ -5,8 +5,8 @@ replicaCount: 2
 
 image:
   repository: preetisoundaryaa/myretail-app
-  tag: v1
-  pullPolicy: Always
+  tag: "set-by-ci"
+  pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP

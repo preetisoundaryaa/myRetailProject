@@ -27,3 +27,9 @@ dist/
 
 # Docker
 *.log
+
+# Test and tooling artifacts
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
