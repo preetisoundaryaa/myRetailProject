@@ -75,10 +75,28 @@ Optional custom values:
 ```bash
 helm install retail-release ./helm/retail-app \
   --set image.repository=preetisoundaryaa/myretail-app \
-  --set image.tag=latest \
+  --set image.tag=<git-commit-sha> \
   --set replicaCount=3 \
   --set service.type=LoadBalancer
 ```
+
+## CI/CD Pipeline
+
+This repository uses a GitOps CI/CD flow with GitHub Actions and Argo CD:
+
+1. Code is pushed to `main`.
+2. GitHub Actions runs tests, builds the Docker image, and tags it with the commit SHA (`github.sha`).
+3. The workflow pushes `preetisoundaryaa/myretail-app:<commit-sha>` to Docker Hub.
+4. The workflow updates `helm/retail-app/values.yaml` with that exact SHA tag and commits the change back to the repository.
+5. Argo CD detects the `values.yaml` change in Git and automatically syncs the cluster.
+
+Flow diagram:
+
+```text
+Code push -> GitHub Actions -> Build & Push Image -> Update Helm -> Argo CD Sync -> Deploy
+```
+
+This removes manual Docker image tagging and manual Helm image tag updates from the deployment workflow.
 
 ## Argo CD GitOps deployment
 

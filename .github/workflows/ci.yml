@@ -1,17 +1,20 @@
-name: CI
+name: CI/CD
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - helm/retail-app/values.yaml
+
+permissions:
+  contents: write
 
 jobs:
   test:
+    name: Run unit tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,3 +32,45 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  build_and_publish:
+    name: Build, push image, and update Helm tag
+    if: ${{ github.event_name == 'push' }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: docker build -t preetisoundaryaa/myretail-app:${IMAGE_TAG} .
+
+      - name: Push Docker image
+        run: docker push preetisoundaryaa/myretail-app:${IMAGE_TAG}
+
+      - name: Update Helm values image tag
+        run: |
+          sed -i "s|^\(  tag: \).*|\1\"${IMAGE_TAG}\"|" helm/retail-app/values.yaml
+
+      - name: Commit and push Helm tag update
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add helm/retail-app/values.yaml
+          if git diff --cached --quiet; then
+            echo "No image tag changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(ci): update image tag to ${IMAGE_TAG}"
+          git push
