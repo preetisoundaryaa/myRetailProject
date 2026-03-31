@@ -3,6 +3,9 @@ fullnameOverride: ""
 
 replicaCount: 2
 
+annotations:
+  redeploy: "v2"
+
 image:
   repository: preetisoundaryaa/myretail-app
   tag: latest
