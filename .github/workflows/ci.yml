@@ -1,12 +1,13 @@
 name: CI/CD
 
 on:
-pull_request:
-branches:
-- main
-push:
-branches:
-- main
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
 paths-ignore:
 - 'helm/retail-app/values.yaml'
 
@@ -14,10 +15,9 @@ permissions:
 contents: write
 
 jobs:
-test:
-runs-on: ubuntu-latest
+  test:
+    runs-on: ubuntu-latest
 
-```
 steps:
   - name: Checkout code
     uses: actions/checkout@v4
@@ -35,13 +35,13 @@ steps:
 
   - name: Run tests
     run: pytest -q
-```
+
 
 build-and-release:
 needs: test
 runs-on: ubuntu-latest
 
-```
+
 steps:
 
   - name: Skip if not push
@@ -103,4 +103,4 @@ steps:
 
       git pull --rebase
       git push
-```
+
