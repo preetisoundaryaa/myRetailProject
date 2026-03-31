@@ -4,7 +4,7 @@ fullnameOverride: ""
 replicaCount: 2
 
 annotations:
-  redeploy: "v2"
+  redeploy: "v2.0"
 
 image:
   repository: preetisoundaryaa/myretail-app
