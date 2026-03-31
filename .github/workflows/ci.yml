@@ -38,12 +38,16 @@ steps:
 ```
 
 build-and-release:
-if: github.event_name == 'push'
 needs: test
 runs-on: ubuntu-latest
 
 ```
 steps:
+
+  - name: Skip if not push
+    if: github.event_name != 'push'
+    run: exit 0
+
   - name: Checkout code
     uses: actions/checkout@v4
     with:

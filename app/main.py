@@ -108,7 +108,7 @@ def build_app() -> Flask:
 
     @app.route("/version")
     def version():
-        return "Version 2 running"
+        return "Version 2 is running"
 
     return app
 
