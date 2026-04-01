@@ -3,15 +3,14 @@ fullnameOverride: ""
 
 replicaCount: 2
 
-annotations:
-  redeploy: "v2.0"
 
 image:
   repository: preetisoundaryaa/myretail-app
-  tag: latest
+  tag: "initial"
   pullPolicy: Always
 
 service:
+  name: retail-app
   type: ClusterIP
   port: 80
   targetPort: 8000
@@ -55,3 +54,9 @@ grafana:
   adminUser: admin
   adminPassword: admin
   plugins: grafana-piechart-panel,grafana-polystat-panel
+
+ingress:
+  enabled: true
+  host: myretail.local
+  path: /
+  pathType: Prefix
