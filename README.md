@@ -80,6 +80,31 @@ helm install retail-release ./helm/retail-app \
   --set service.type=LoadBalancer
 ```
 
+### Ingress for local development (Docker Desktop Kubernetes)
+
+1. Install NGINX Ingress Controller (one-time per cluster):
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+```
+
+2. Add a local host entry:
+
+```text
+127.0.0.1 myretail.local
+```
+
+3. Access the app:
+
+```text
+http://myretail.local
+```
+
+Notes:
+- The chart enables an `Ingress` using `ingressClassName: nginx` and routes `/` to the app service.
+- TLS is intentionally not configured here (demo/local use only).
+- In production, add TLS using `cert-manager` with an issuer/cluster-issuer and Ingress TLS settings.
+
 ## CI/CD Pipeline
 
 This repository uses a GitOps CI/CD flow with GitHub Actions and Argo CD:

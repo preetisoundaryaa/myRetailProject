@@ -6,10 +6,11 @@ replicaCount: 2
 
 image:
   repository: preetisoundaryaa/myretail-app
-  tag: "e456612"
+  tag: "initial"
   pullPolicy: Always
 
 service:
+  name: retail-app
   type: ClusterIP
   port: 80
   targetPort: 8000
@@ -53,3 +54,9 @@ grafana:
   adminUser: admin
   adminPassword: admin
   plugins: grafana-piechart-panel,grafana-polystat-panel
+
+ingress:
+  enabled: true
+  host: myretail.local
+  path: /
+  pathType: Prefix
