@@ -6,7 +6,7 @@ replicaCount: 2
 
 image:
   repository: preetisoundaryaa/myretail-app
-  tag: "51892c6"
+  tag: "e456612"
   pullPolicy: Always
 
 service:
