@@ -15,7 +15,7 @@ spec:
             pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
-                name: {{ .Values.service.name | default (include "retail-app.fullname" .) }}
+                name: {{ include "retail-app.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
 {{- end }}
