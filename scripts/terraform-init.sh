@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+terraform -chdir=terraform init
+terraform -chdir=terraform validate

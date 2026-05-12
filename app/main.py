@@ -92,7 +92,6 @@ def build_app() -> Flask:
             RESTOCK_COUNTER.labels(status="failed").inc()
             return jsonify({"ok": False, "error": "qty must be a positive integer"}), 400
 
-        # TODO: lock this down with auth if someone actually deploys this.
         result = store.restock_item(item_id=item_id, amount=amount)
         if not result["ok"]:
             RESTOCK_COUNTER.labels(status="failed").inc()

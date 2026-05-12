@@ -1,166 +1,306 @@
-# myRetailProject
+# myRetail DevOps Platform
 
-Production-ready retail inventory application with a DevOps-first setup:
-- Flask API + static frontend
-- Dockerized runtime
-- Kubernetes deployment via Helm
-- Prometheus + Grafana monitoring
-- Argo CD GitOps delivery
+myRetail is a Flask demo application packaged as a production-style DevOps portfolio project. The application is containerized with Docker, deployed with Helm through Argo CD, and supported by Terraform-managed local platform services on Docker Desktop Kubernetes.
 
-## Repository structure
+## Architecture
+
+```text
+Developer / GitHub
+      |
+      | push to main
+      v
+GitHub Actions
+  - test Flask app
+  - lint/validate Terraform
+  - lint/render Helm
+  - build and push Docker image
+  - update Helm image tag
+      |
+      v
+Docker Hub image
+      |
+      v
+GitOps repository state
+      |
+      v
+Argo CD
+      |
+      v
+retail namespace
+  - myRetail Deployment
+  - ClusterIP Service
+  - Ingress myretail.local
+  - ServiceMonitor
+  - Grafana dashboard ConfigMap
+
+Terraform provisions platform namespaces and Helm releases:
+  - argocd namespace: Argo CD
+  - ingress-nginx namespace: NGINX Ingress Controller
+  - monitoring namespace: kube-prometheus-stack
+  - retail namespace: application target namespace
+```
+
+## Technology Stack
+
+- Python Flask application with Prometheus metrics
+- Gunicorn production WSGI server
+- Docker image running as a non-root user
+- Kubernetes on Docker Desktop
+- Helm application chart in `helm/myretail`
+- Argo CD GitOps application in `argocd/application.yaml`
+- Terraform with Kubernetes and Helm providers
+- ingress-nginx for local ingress
+- kube-prometheus-stack for Prometheus and Grafana
+- GitHub Actions CI/CD
+
+## Project Structure
 
 ```text
 myRetailProject/
-├── app/                     # Flask app
-├── helm/
-│   └── retail-app/          # Helm chart for app + monitoring stack
-├── argocd/
-│   └── application.yaml     # Argo CD application manifest
-├── docs/
-│   └── architecture.md
+├── app/
+├── static/
+├── tests/
 ├── Dockerfile
+├── requirements.txt
+├── helm/
+│   └── myretail/
+├── terraform/
+├── argocd/
+├── k8s/
+│   └── ingress/
+├── monitoring/
+├── scripts/
+├── .github/
+│   └── workflows/
+│       └── cicd.yaml
 └── README.md
 ```
 
-## Architecture (text diagram)
+## Local Prerequisites
+
+- Docker Desktop with Kubernetes enabled
+- `kubectl`
+- `helm`
+- `terraform`
+- Docker Hub account
+
+Confirm the cluster context:
+
+```bash
+kubectl config use-context docker-desktop
+kubectl get nodes
+```
+
+## Run the App Locally with Docker
+
+```bash
+docker build -t myretail-app:local .
+docker run --rm -p 8000:8000 myretail-app:local
+```
+
+Open:
 
 ```text
-User -> retail-app Service -> retail-app Pod(s)
-                               |\
-                               | \-> /health
-                               |
-                               \--> /metrics -> Prometheus -> Grafana dashboards
+http://localhost:8000
 ```
 
-See `docs/architecture.md` for the full flow.
-
-## Application endpoints
-
-- `GET /api/items`
-- `POST /api/purchase`
-- `POST /api/restock`
-- `GET /health`
-- `GET /metrics` (provided by Prometheus Flask exporter)
-
-## Local run
-
-### 1) Python
+Health check:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m app.main
+curl http://localhost:8000/health
 ```
 
-Open http://localhost:8000
+## Provision Platform with Terraform
 
-### 2) Docker build and run
+Terraform installs platform components only. It does not deploy the myRetail application chart directly; Argo CD owns the application deployment.
 
 ```bash
-docker build -t retail-app:local .
-docker run --rm -p 8000:8000 retail-app:local
+cd terraform
+terraform init
+terraform fmt -recursive
+terraform validate
+terraform apply
 ```
 
-## Helm deployment
+Terraform creates:
 
-Install into current Kubernetes context:
+- `argocd`
+- `monitoring`
+- `ingress-nginx`
+- `retail`
 
-```bash
-helm install retail-release ./helm/retail-app
-```
+Terraform installs:
 
-Optional custom values:
+- Argo CD via Helm
+- kube-prometheus-stack via Helm
+- ingress-nginx via Helm
 
-```bash
-helm install retail-release ./helm/retail-app \
-  --set image.repository=preetisoundaryaa/myretail-app \
-  --set image.tag=<git-commit-sha> \
-  --set replicaCount=3 \
-  --set service.type=LoadBalancer
-```
+Useful outputs include port-forward commands for Argo CD and Grafana.
 
-### Ingress for local development (Docker Desktop Kubernetes)
+## Deploy with Argo CD
 
-1. Install NGINX Ingress Controller (one-time per cluster):
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
-```
-
-2. Add a local host entry:
-
-```text
-127.0.0.1 myretail.local
-```
-
-3. Access the app:
-
-```text
-http://myretail.local
-```
-
-Notes:
-- The chart enables an `Ingress` using `ingressClassName: nginx` and routes `/` to the app service.
-- TLS is intentionally not configured here (demo/local use only).
-- In production, add TLS using `cert-manager` with an issuer/cluster-issuer and Ingress TLS settings.
-
-## CI/CD Pipeline
-
-This repository uses a GitOps CI/CD flow with GitHub Actions and Argo CD:
-
-1. Code is pushed to `main`.
-2. GitHub Actions runs tests, builds the Docker image, and tags it with the commit SHA (`github.sha`).
-3. The workflow pushes `preetisoundaryaa/myretail-app:<commit-sha>` to Docker Hub.
-4. The workflow updates `helm/retail-app/values.yaml` with that exact SHA tag and commits the change back to the repository.
-5. Argo CD detects the `values.yaml` change in Git and automatically syncs the cluster.
-
-Flow diagram:
-
-```text
-Code push -> GitHub Actions -> Build & Push Image -> Update Helm -> Argo CD Sync -> Deploy
-```
-
-This removes manual Docker image tagging and manual Helm image tag updates from the deployment workflow.
-
-## Argo CD GitOps deployment
-
-1. Apply Argo CD application:
+After Terraform finishes, apply the Argo CD application:
 
 ```bash
 kubectl apply -f argocd/application.yaml
 ```
 
-2. Argo CD sync behavior:
-- Uses chart path: `helm/retail-app`
-- `automated` sync enabled
-- `prune: true`
-- `selfHeal: true`
+Argo CD watches this repository on `main` and syncs the Helm chart from:
 
-## Monitoring details
+```text
+helm/myretail
+```
 
-### Prometheus
+The application is deployed into the `retail` namespace.
 
-- Runs in-cluster from Helm chart.
-- Scrapes `retail-app` using Kubernetes endpoint discovery.
-- Uses `prometheus-sa` + `ClusterRole` + `ClusterRoleBinding` for pod/service discovery.
+Check sync status:
 
-### Grafana
+```bash
+kubectl -n argocd get applications.argoproj.io
+kubectl -n retail get pods,svc,ingress
+```
 
-- Runs in-cluster from Helm chart.
-- Starts with Prometheus datasource provisioned.
-- Default credentials are configurable in Helm values.
+Open the Argo CD UI:
 
-## GitOps workflow summary
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8080:80
+```
 
-1. Edit app/chart in Git.
-2. Push changes and merge to `main`.
-3. Argo CD detects repository delta.
-4. Argo CD syncs cluster to desired state.
-5. Prometheus and Grafana validate service health/metrics.
+Then browse to `http://localhost:8080`.
 
-## Notes
+## Local Ingress
 
-- Flask service binds to `0.0.0.0:8000`.
-- Production container uses gunicorn on port `8000`.
-- Inventory store is in-memory (stateless demo behavior).
+The Helm chart creates an ingress for:
+
+```text
+myretail.local
+```
+
+Add this line to `/etc/hosts` on macOS/Linux, or to `C:\Windows\System32\drivers\etc\hosts` on Windows:
+
+```text
+127.0.0.1 myretail.local
+```
+
+Open:
+
+```text
+http://myretail.local
+```
+
+TLS is intentionally not configured for the local demo. In production, use cert-manager with a real DNS name and an issuer such as Let's Encrypt.
+
+## Helm Deployment
+
+For direct local testing without Argo CD:
+
+```bash
+helm lint helm/myretail
+helm template myretail helm/myretail --namespace retail
+helm upgrade --install myretail helm/myretail --namespace retail --create-namespace
+```
+
+Argo CD is still the intended deployment path for the portfolio workflow.
+
+## Monitoring
+
+kube-prometheus-stack runs in the `monitoring` namespace. The app chart creates:
+
+- `ServiceMonitor` for `/metrics`
+- Grafana dashboard ConfigMap labeled for the Grafana sidecar
+
+Open Grafana:
+
+```bash
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+```
+
+Default local credentials:
+
+```text
+admin / admin
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## CI/CD
+
+The workflow in `.github/workflows/cicd.yaml` runs on pushes to `main`.
+
+It performs:
+
+- Python dependency install and tests
+- Terraform format check, init, and validate
+- Helm lint and manifest rendering
+- Docker image build and push
+- Docker tags for commit SHA and `latest`
+- Safe Helm image tag update committed back to the repository
+
+The image tag update commit uses `[skip ci]` to avoid a workflow loop.
+
+## Required GitHub Secrets
+
+Set these repository secrets in GitHub:
+
+- `DOCKER_USERNAME`
+- `DOCKER_PASSWORD` or `DOCKER_TOKEN`
+
+`DOCKER_TOKEN` is recommended for production-style usage.
+
+## Helper Scripts
+
+Scripts are provided for local convenience:
+
+```bash
+./scripts/terraform-init.sh
+./scripts/start.sh
+./scripts/port-forward.sh app
+./scripts/port-forward.sh argocd
+./scripts/port-forward.sh grafana
+./scripts/cleanup.sh
+```
+
+## Screenshots
+
+Add screenshots here after a local run:
+
+- myRetail app via `http://myretail.local`
+- Argo CD application sync view
+- Grafana myRetail dashboard
+- GitHub Actions workflow run
+
+## Troubleshooting
+
+If `myretail.local` does not load, confirm the host entry exists and ingress-nginx has an external address:
+
+```bash
+kubectl -n ingress-nginx get svc
+kubectl -n retail get ingress
+```
+
+If Argo CD does not sync, check the application and repo path:
+
+```bash
+kubectl -n argocd describe application myretail
+```
+
+If Prometheus does not scrape the app, confirm the ServiceMonitor exists:
+
+```bash
+kubectl -n retail get servicemonitor
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+```
+
+If Docker image pulls fail, verify the image repository and tag in `helm/myretail/values.yaml`.
+
+## Future Improvements
+
+- Add cert-manager and TLS for a real domain
+- Add external secrets for production credentials
+- Add image vulnerability scanning in CI
+- Add Kubernetes policy checks with Conftest or Kyverno
+- Split Terraform into reusable modules when targeting a cloud cluster

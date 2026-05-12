@@ -28,6 +28,15 @@ dist/
 # Docker
 *.log
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+
 # Test and tooling artifacts
 .coverage
 htmlcov/

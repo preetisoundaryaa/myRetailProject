@@ -1,0 +1,39 @@
+{
+  "title": "myRetail Overview",
+  "uid": "myretail-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "tags": [
+    "myretail",
+    "flask"
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP request rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(flask_http_request_total[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Purchases",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(retail_purchase_total) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    }
+  ]
+}

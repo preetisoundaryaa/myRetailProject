@@ -9,5 +9,4 @@ MarkupSafe==3.0.3
 packaging==26.0
 prometheus-client==0.23.1
 prometheus-flask-exporter==0.23.2
-requests==2.31.0
 Werkzeug==3.1.6

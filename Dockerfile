@@ -1,22 +1,21 @@
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 
-# Install dependencies first to maximize Docker layer caching.
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
 
-# Create a non-root user and group.
-RUN groupadd --system app && useradd --system --gid app --create-home app
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app
 
-# Copy application source.
-COPY . .
-
-# Ensure the non-root user can read app files.
-RUN chown -R app:app /app
+COPY --chown=app:app app ./app
+COPY --chown=app:app static ./static
 
 USER app
 
@@ -25,8 +24,7 @@ EXPOSE 8000
 ENV APP_ENV=prod \
     LOG_LEVEL=INFO
 
-# Gunicorn serves Flask app with 4 workers and 2 threads on port 8000.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "app.main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "2", "--timeout", "60", "app.main:app"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request,sys;\

@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: retail-app
+  name: myretail
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/preetisoundaryaa/myRetailProject.git
     targetRevision: main
-    path: helm/retail-app
+    path: helm/myretail
+    helm:
+      releaseName: myretail
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: retail
   syncPolicy:
     automated:
       prune: true

@@ -1,0 +1,62 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+image:
+  repository: preetisoundaryaa/myretail-app
+  tag: "4cfece2"
+  pullPolicy: IfNotPresent
+
+service:
+  name: myretail
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  annotations: {}
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  APP_ENV: prod
+  DEBUG: "false"
+  LOG_LEVEL: INFO
+
+ingress:
+  enabled: true
+  className: nginx
+  host: myretail.local
+  path: /
+  pathType: Prefix
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s
+  labels:
+    release: kube-prometheus-stack
+
+grafanaDashboard:
+  enabled: true
+  labels:
+    grafana_dashboard: "1"
